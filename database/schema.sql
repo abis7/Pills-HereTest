@@ -1,145 +1,288 @@
+-- public.medicamento definition
 
+-- Drop table
 
+-- DROP TABLE public.medicamento;
 
-CREATE TABLE usuario (
-    id_usuario SERIAL PRIMARY KEY,
-    correo VARCHAR(100) UNIQUE NOT NULL,
-    contrasena VARCHAR(255) NOT NULL,
-    telefono VARCHAR(20),
-    rol VARCHAR(20) NOT NULL CHECK (rol IN ('MEDICO', 'PACIENTE')),
-    fecha_registro DATE NOT NULL
+CREATE TABLE public.medicamento (
+	id_medicamento serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	presentacion varchar(100) NULL,
+	concentracion varchar(50) NULL,
+	via_administracion varchar(50) NULL,
+	descripcion text NULL,
+	CONSTRAINT medicamento_pkey PRIMARY KEY (id_medicamento)
 );
 
 
-CREATE TABLE medico (
-    id_medico SERIAL PRIMARY KEY,
-    id_usuario INT NOT NULL UNIQUE,
-    nombre VARCHAR(100) NOT NULL,
-    apellido_paterno VARCHAR(100) NOT NULL,
-    apellido_materno VARCHAR(100),
-    cedula_profesional VARCHAR(50) UNIQUE NOT NULL,
-    especialidad VARCHAR(100) NOT NULL,
-    consultorio VARCHAR(100),
-    fecha_alta DATE NOT NULL,
-    FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+-- public.usuario definition
+
+-- Drop table
+
+-- DROP TABLE public.usuario;
+
+CREATE TABLE public.usuario (
+	id_usuario serial4 NOT NULL,
+	correo varchar(100) NOT NULL,
+	contrasena varchar(255) NOT NULL,
+	telefono varchar(20) NULL,
+	rol varchar(20) NOT NULL,
+	fecha_registro date NOT NULL,
+	CONSTRAINT usuario_correo_key UNIQUE (correo),
+	CONSTRAINT usuario_pkey PRIMARY KEY (id_usuario),
+	CONSTRAINT usuario_rol_check CHECK (((rol)::text = ANY ((ARRAY['MEDICO'::character varying, 'PACIENTE'::character varying])::text[])))
 );
 
 
-CREATE TABLE paciente (
-    id_paciente SERIAL PRIMARY KEY,
-    id_usuario INT NOT NULL UNIQUE,
-    codigo_paciente VARCHAR(50) UNIQUE NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    apellido_paterno VARCHAR(100) NOT NULL,
-    apellido_materno VARCHAR(100),
-    fecha_nacimiento DATE NOT NULL,
-    sexo VARCHAR(20) NOT NULL,
-    tipo_sangre VARCHAR(10),
-    alergias TEXT,
-    FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+-- public.medico definition
+
+-- Drop table
+
+-- DROP TABLE public.medico;
+
+CREATE TABLE public.medico (
+	id_medico serial4 NOT NULL,
+	id_usuario int4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	apellido_paterno varchar(100) NOT NULL,
+	apellido_materno varchar(100) NULL,
+	cedula_profesional varchar(50) NOT NULL,
+	especialidad varchar(100) NOT NULL,
+	consultorio varchar(100) NULL,
+	fecha_alta date NOT NULL,
+	fecha_nacimiento date NULL,
+	sexo varchar(20) NULL,
+	CONSTRAINT medico_cedula_profesional_key UNIQUE (cedula_profesional),
+	CONSTRAINT medico_id_usuario_key UNIQUE (id_usuario),
+	CONSTRAINT medico_pkey PRIMARY KEY (id_medico),
+	CONSTRAINT medico_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuario(id_usuario)
 );
 
 
-CREATE TABLE medico_paciente (
-    id_medico_paciente SERIAL PRIMARY KEY,
-    id_medico INT NOT NULL,
-    id_paciente INT NOT NULL,
-    fecha_vinculacion DATE NOT NULL,
-    FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
-    FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente),
-    UNIQUE (id_medico, id_paciente)
-);
+-- public.paciente definition
 
-CREATE TABLE medicamento (
-    id_medicamento SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    presentacion VARCHAR(100),
-    concentracion VARCHAR(50),
-    via_administracion VARCHAR(50),
-    descripcion TEXT
-);
+-- Drop table
 
+-- DROP TABLE public.paciente;
 
-CREATE TABLE tratamiento (
-    id_tratamiento SERIAL PRIMARY KEY,
-    id_medico INT NOT NULL,
-    id_paciente INT NOT NULL,
-    nombre_tratamiento VARCHAR(100) NOT NULL,
-    diagnostico TEXT,
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE,
-    estado VARCHAR(30) NOT NULL,
-    receta_medica TEXT,
-    notas_medicas TEXT,
-    FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
-    FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente)
-);
-
-CREATE TABLE dosis (
-    id_dosis SERIAL PRIMARY KEY,
-    id_tratamiento INT NOT NULL,
-    id_medicamento INT NOT NULL,
-    cantidad VARCHAR(50) NOT NULL,
-    frecuencia VARCHAR(50) NOT NULL,
-    hora_programada TIME NOT NULL,
-    duracion INT NOT NULL,
-    FOREIGN KEY (id_tratamiento) REFERENCES tratamiento(id_tratamiento),
-    FOREIGN KEY (id_medicamento) REFERENCES medicamento(id_medicamento)
+CREATE TABLE public.paciente (
+	id_paciente serial4 NOT NULL,
+	id_usuario int4 NOT NULL,
+	codigo_paciente varchar(50) NOT NULL,
+	nombre varchar(100) NOT NULL,
+	apellido_paterno varchar(100) NOT NULL,
+	apellido_materno varchar(100) NULL,
+	fecha_nacimiento date NOT NULL,
+	sexo varchar(20) NOT NULL,
+	tipo_sangre varchar(10) NULL,
+	alergias text NULL,
+	CONSTRAINT paciente_codigo_paciente_key UNIQUE (codigo_paciente),
+	CONSTRAINT paciente_id_usuario_key UNIQUE (id_usuario),
+	CONSTRAINT paciente_pkey PRIMARY KEY (id_paciente),
+	CONSTRAINT paciente_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuario(id_usuario)
 );
 
 
-CREATE TABLE calendario_medicacion (
-    id_calendario SERIAL PRIMARY KEY,
-    id_dosis INT NOT NULL,
-    fecha DATE NOT NULL,
-    hora TIME NOT NULL,
-    estado VARCHAR(30) NOT NULL CHECK (estado IN ('PENDIENTE', 'TOMADA', 'OMITIDA')),
-    observaciones TEXT,
-    FOREIGN KEY (id_dosis) REFERENCES dosis(id_dosis)
-);
+-- public.tratamiento definition
 
-CREATE TABLE notificacion (
-    id_notificacion SERIAL PRIMARY KEY,
-    id_calendario INT NOT NULL,
-    titulo VARCHAR(100) NOT NULL,
-    mensaje TEXT NOT NULL,
-    fecha_envio TIMESTAMP NOT NULL,
-    tipo VARCHAR(30) NOT NULL,
-    estado VARCHAR(30) NOT NULL,
-    FOREIGN KEY (id_calendario) REFERENCES calendario_medicacion(id_calendario)
-);
+-- Drop table
 
+-- DROP TABLE public.tratamiento;
 
-CREATE TABLE historial_clinico (
-    id_historial SERIAL PRIMARY KEY,
-    id_paciente INT NOT NULL,
-    id_tratamiento INT,
-    fecha DATE NOT NULL,
-    descripcion TEXT NOT NULL,
-    observaciones TEXT,
-    FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente),
-    FOREIGN KEY (id_tratamiento) REFERENCES tratamiento(id_tratamiento)
+CREATE TABLE public.tratamiento (
+	id_tratamiento serial4 NOT NULL,
+	id_medico int4 NOT NULL,
+	id_paciente int4 NOT NULL,
+	nombre_tratamiento varchar(100) NOT NULL,
+	diagnostico text NULL,
+	fecha_inicio date NOT NULL,
+	fecha_fin date NULL,
+	estado varchar(30) NOT NULL,
+	receta_medica text NULL,
+	notas_medicas text NULL,
+	fecha_inicio_real date NULL,
+	CONSTRAINT tratamiento_pkey PRIMARY KEY (id_tratamiento),
+	CONSTRAINT tratamiento_id_medico_fkey FOREIGN KEY (id_medico) REFERENCES public.medico(id_medico),
+	CONSTRAINT tratamiento_id_paciente_fkey FOREIGN KEY (id_paciente) REFERENCES public.paciente(id_paciente)
 );
 
 
-CREATE TABLE estadistica_tratamiento (
-    id_estadistica SERIAL PRIMARY KEY,
-    id_tratamiento INT NOT NULL UNIQUE,
-    total_dosis INT NOT NULL DEFAULT 0,
-    dosis_tomadas INT NOT NULL DEFAULT 0,
-    dosis_omitidas INT NOT NULL DEFAULT 0,
-    porcentaje_cumplimiento DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    fecha_calculo DATE NOT NULL,
-    FOREIGN KEY (id_tratamiento) REFERENCES tratamiento(id_tratamiento)
+-- public.aviso definition
+
+-- Drop table
+
+-- DROP TABLE public.aviso;
+
+CREATE TABLE public.aviso (
+	id_aviso serial4 NOT NULL,
+	id_medico int4 NOT NULL,
+	titulo varchar(100) NOT NULL,
+	contenido text NOT NULL,
+	fecha_publicacion timestamp NOT NULL,
+	estado varchar(20) NOT NULL,
+	observaciones text NULL,
+	id_paciente int4 NULL,
+	CONSTRAINT aviso_estado_check CHECK (((estado)::text = ANY ((ARRAY['ACTIVO'::character varying, 'INACTIVO'::character varying])::text[]))),
+	CONSTRAINT aviso_pkey PRIMARY KEY (id_aviso),
+	CONSTRAINT aviso_id_medico_fkey FOREIGN KEY (id_medico) REFERENCES public.medico(id_medico),
+	CONSTRAINT fk_aviso_paciente FOREIGN KEY (id_paciente) REFERENCES public.paciente(id_paciente)
 );
 
 
-CREATE TABLE aviso (
-    id_aviso SERIAL PRIMARY KEY,
-    id_medico INT NOT NULL,
-    titulo VARCHAR(100) NOT NULL,
-    contenido TEXT NOT NULL,
-    fecha_publicacion TIMESTAMP NOT NULL,
-    estado VARCHAR(20) NOT NULL CHECK (estado IN ('ACTIVO', 'INACTIVO')),
-    FOREIGN KEY (id_medico) REFERENCES medico(id_medico)
+-- public.dosis definition
+
+-- Drop table
+
+-- DROP TABLE public.dosis;
+
+CREATE TABLE public.dosis (
+	id_dosis serial4 NOT NULL,
+	id_tratamiento int4 NOT NULL,
+	id_medicamento int4 NOT NULL,
+	cantidad varchar(50) NOT NULL,
+	frecuencia varchar(50) NOT NULL,
+	hora_programada time NOT NULL,
+	duracion int4 NOT NULL,
+	intervalo_horas int4 NULL,
+	hora_inicio_paciente time NULL,
+	tratamiento_iniciado bool DEFAULT false NULL,
+	duracion_dias int4 DEFAULT 1 NOT NULL,
+	CONSTRAINT dosis_pkey PRIMARY KEY (id_dosis),
+	CONSTRAINT dosis_id_medicamento_fkey FOREIGN KEY (id_medicamento) REFERENCES public.medicamento(id_medicamento),
+	CONSTRAINT dosis_id_tratamiento_fkey FOREIGN KEY (id_tratamiento) REFERENCES public.tratamiento(id_tratamiento)
+);
+
+
+-- public.estadistica_paciente definition
+
+-- Drop table
+
+-- DROP TABLE public.estadistica_paciente;
+
+CREATE TABLE public.estadistica_paciente (
+	id_estadistica_paciente serial4 NOT NULL,
+	id_paciente int4 NOT NULL,
+	total_dosis int4 DEFAULT 0 NOT NULL,
+	dosis_tomadas int4 DEFAULT 0 NOT NULL,
+	dosis_pendientes int4 DEFAULT 0 NOT NULL,
+	dosis_omitidas int4 DEFAULT 0 NOT NULL,
+	porcentaje_cumplimiento numeric(5, 2) DEFAULT 0.00 NOT NULL,
+	fecha_calculo date NOT NULL,
+	CONSTRAINT estadistica_paciente_id_paciente_key UNIQUE (id_paciente),
+	CONSTRAINT estadistica_paciente_pkey PRIMARY KEY (id_estadistica_paciente),
+	CONSTRAINT estadistica_paciente_id_paciente_fkey FOREIGN KEY (id_paciente) REFERENCES public.paciente(id_paciente)
+);
+
+
+-- public.estadistica_tratamiento definition
+
+-- Drop table
+
+-- DROP TABLE public.estadistica_tratamiento;
+
+CREATE TABLE public.estadistica_tratamiento (
+	id_estadistica serial4 NOT NULL,
+	id_tratamiento int4 NOT NULL,
+	total_dosis int4 DEFAULT 0 NOT NULL,
+	dosis_tomadas int4 DEFAULT 0 NOT NULL,
+	dosis_omitidas int4 DEFAULT 0 NOT NULL,
+	porcentaje_cumplimiento numeric(5, 2) DEFAULT 0.00 NOT NULL,
+	fecha_calculo date NOT NULL,
+	dosis_pendientes int4 DEFAULT 0 NOT NULL,
+	CONSTRAINT estadistica_tratamiento_id_tratamiento_key UNIQUE (id_tratamiento),
+	CONSTRAINT estadistica_tratamiento_pkey PRIMARY KEY (id_estadistica),
+	CONSTRAINT estadistica_tratamiento_id_tratamiento_fkey FOREIGN KEY (id_tratamiento) REFERENCES public.tratamiento(id_tratamiento)
+);
+
+
+-- public.historial_clinico definition
+
+-- Drop table
+
+-- DROP TABLE public.historial_clinico;
+
+CREATE TABLE public.historial_clinico (
+	id_historial serial4 NOT NULL,
+	id_paciente int4 NOT NULL,
+	id_tratamiento int4 NULL,
+	fecha date NOT NULL,
+	descripcion text NOT NULL,
+	observaciones text NULL,
+	CONSTRAINT historial_clinico_pkey PRIMARY KEY (id_historial),
+	CONSTRAINT historial_clinico_id_paciente_fkey FOREIGN KEY (id_paciente) REFERENCES public.paciente(id_paciente),
+	CONSTRAINT historial_clinico_id_tratamiento_fkey FOREIGN KEY (id_tratamiento) REFERENCES public.tratamiento(id_tratamiento)
+);
+
+
+-- public.medico_paciente definition
+
+-- Drop table
+
+-- DROP TABLE public.medico_paciente;
+
+CREATE TABLE public.medico_paciente (
+	id_medico_paciente serial4 NOT NULL,
+	id_medico int4 NOT NULL,
+	id_paciente int4 NOT NULL,
+	fecha_vinculacion date NOT NULL,
+	fecha_ultima_consulta timestamp NULL,
+	CONSTRAINT medico_paciente_id_medico_id_paciente_key UNIQUE (id_medico, id_paciente),
+	CONSTRAINT medico_paciente_pkey PRIMARY KEY (id_medico_paciente),
+	CONSTRAINT medico_paciente_id_medico_fkey FOREIGN KEY (id_medico) REFERENCES public.medico(id_medico),
+	CONSTRAINT medico_paciente_id_paciente_fkey FOREIGN KEY (id_paciente) REFERENCES public.paciente(id_paciente)
+);
+
+
+-- public.toma_medicamento definition
+
+-- Drop table
+
+-- DROP TABLE public.toma_medicamento;
+
+CREATE TABLE public.toma_medicamento (
+	id_toma serial4 NOT NULL,
+	id_dosis int4 NOT NULL,
+	fecha_hora_programada timestamp NOT NULL,
+	fecha_hora_tomada timestamp NULL,
+	estado varchar(20) NOT NULL,
+	CONSTRAINT toma_medicamento_pkey PRIMARY KEY (id_toma),
+	CONSTRAINT fk_toma_dosis FOREIGN KEY (id_dosis) REFERENCES public.dosis(id_dosis)
+);
+
+
+-- public.calendario_medicacion definition
+
+-- Drop table
+
+-- DROP TABLE public.calendario_medicacion;
+
+CREATE TABLE public.calendario_medicacion (
+	id_calendario serial4 NOT NULL,
+	id_dosis int4 NOT NULL,
+	fecha date NOT NULL,
+	hora time NOT NULL,
+	estado varchar(30) NOT NULL,
+	observaciones text NULL,
+	CONSTRAINT calendario_medicacion_estado_check CHECK (((estado)::text = ANY ((ARRAY['PENDIENTE'::character varying, 'TOMADA'::character varying, 'OMITIDA'::character varying])::text[]))),
+	CONSTRAINT calendario_medicacion_pkey PRIMARY KEY (id_calendario),
+	CONSTRAINT calendario_medicacion_id_dosis_fkey FOREIGN KEY (id_dosis) REFERENCES public.dosis(id_dosis)
+);
+
+
+-- public.notificacion definition
+
+-- Drop table
+
+-- DROP TABLE public.notificacion;
+
+CREATE TABLE public.notificacion (
+	id_notificacion serial4 NOT NULL,
+	id_calendario int4 NOT NULL,
+	titulo varchar(100) NOT NULL,
+	mensaje text NOT NULL,
+	fecha_envio timestamp NOT NULL,
+	tipo varchar(30) NOT NULL,
+	estado varchar(30) NOT NULL,
+	CONSTRAINT notificacion_pkey PRIMARY KEY (id_notificacion),
+	CONSTRAINT notificacion_id_calendario_fkey FOREIGN KEY (id_calendario) REFERENCES public.calendario_medicacion(id_calendario)
 );
