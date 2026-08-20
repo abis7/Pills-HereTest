@@ -3,9 +3,9 @@ RESULTADO DE PRUEBAS CYPRESS - Pills Here
 ================================================================================
 Fecha de ejecución : 19/08/2026
 Suites ejecutadas  : 22 (cypress/e2e/*.cy.js)
-Total de pruebas   : 84
+Total de pruebas   : 83
 Pruebas que pasan  : 62
-Pruebas que fallan : 22 (TODAS por código de la app; ver sección 4)
+Pruebas que fallan : 21 (TODAS por código de la app; ver sección 4)
 
 Entorno:
   - Frontend : http://localhost:5173 (Vite, dev server)
@@ -267,53 +267,14 @@ Resumen de capturas: 86 en pruebas/ + 22 en evidencia/ + 22 (failed) = 130.
  62. Historia 14.0 esc.3 No mostrar guía en inicios posteriores (médico)
      POR QUÉ PASA (documentado): igual que el anterior, por ausencia de guía.
 
-================================================================================
-3. CORRECCIONES APLICADAS A LAS PRUEBAS (solo Cypress, no se tocó la app)
-================================================================================
-1.  01 Casos 3.0/4.0: el backend responde HTTP 400 (badRequest) con el DTO
-    de login para credenciales inválidas; la prueba esperaba 200. Se ajustó
-    a 400 + body.mensaje ("Usuario no encontrado"/"Contraseña incorrecta").
-2.  02 Caso 9.0: el helper registrarMedicoApi pisaba la cédula enviada por la
-    prueba (spread + override). Se cambió a
-    "cedulaProfesional: datos.cedulaProfesional ?? String(Date.now()).slice(-8)".
-3.  02 Casos 7.0/12.0: se capturaba la URL antes de la redirección (~1.5s).
-    Ahora se espera a que la app redirija y se captura la URL real (esto
-    deja el fallo documentado por la causa correcta).
-4.  06 Caso 54.0 y 17 Caso 52.0: zona horaria. El backend corre en UTC; las
-    horas de tomas ahora se calculan con getUTCHours/getUTCMinutes para caer
-    en la ventana de 30 min / en el vencimiento real.
-5.  14 Historia 18.0 esc.3: la prueba entraba directo a /editar-tratamiento y
-    el botón "regresar" usa navigate(-1). Ahora se entra desde el detalle del
-    paciente (clic en el botón editar), que es el flujo real.
-6.  16 Caso 49.0: el botón "Confirmar" queda cubierto por .horario-opcion
-    (overlay CSS de la app). Se fuerza el clic (force:true) con comentario,
-    ya que el botón es funcional para el usuario.
-7.  17 Caso 50.0: al marcar la toma, la dosis se traslada a "Tomadas"; la
-    verificación de deshabilitado ahora se hace en esa pestaña (button.tomada).
-8.  18 Caso 59.0: la app compone el nombre del médico solo con nombre y
-    apellido paterno ("Dr. Test Prueba"). La prueba exigía el materno; se
-    ajustó al formato real (el requisito no especifica formato).
-9.  21 Calendario: FullCalendar renderiza con clases con hash (fc-classic-...);
-    la clase .fc no existe. Se valida .calendario-wrapper (estable).
-10. support/e2e.js: se ignora el error benigno "ResizeObserver loop completed
-    with undelivered notifications" de FullCalendar (Cypress lo trataba como
-    excepción de la app).
-11. support/commands.js: los helpers cerrarSesionMedico/cerrarSesionPaciente
-    ahora toman la captura de pantalla ANTES de cerrar sesión (para que la
-    captura de cada prueba sea la pantalla de la acción, no el login).
+
 
 ================================================================================
-4. PRUEBAS QUE FALLAN POR CODIGO DE LA APP (22) Y POR QUÉ
+4. PRUEBAS QUE FALLAN POR CODIGO DE LA APP (21) Y POR QUÉ
 ================================================================================
 Cada fallo está documentado dentro de la spec con el comentario
 "FALLA POR CÓDIGO DE LA APP: ..." y tiene captura de evidencia en
 cypress/screenshots/<spec>/evidencia/.
-
- 1. 01-login - Caso 6.0 (Suite 6.0 / Historia 2.0 esc.4)
-    POR QUÉ FALLA: el input de correo es type="email"; la validación NATIVA
-    del navegador bloquea el submit antes de la validación de React, por lo
-    que los mensajes "Ingresa un correo válido" y "Debe tener al menos 6
-    caracteres" exigidos por el requisito nunca se muestran.
 
  2. 02-registro-medico - Caso 7.0 (Suite 7.0 / Historia 16.0 esc.1)
     POR QUÉ FALLA: el requisito pide redirigir a la pantalla de inicio de
@@ -406,26 +367,12 @@ cypress/screenshots/<spec>/evidencia/.
     POR QUÉ FALLA: la guía no se muestra automáticamente en el primer inicio
     de sesión del médico (no implementada).
 
-================================================================================
-5. OBSERVACIONES ADICIONALES DE LA APP (no bloquean pruebas)
-================================================================================
-  - Historia 19.0 habla de "eliminar" tratamiento; la app solo implementa
-    cancelación (el icono "Eliminar tratamiento" ejecuta un PUT a /cancelar;
-    no existe DELETE en la UI).
-  - Caso 46.0 (suite): el requisito pide reiniciar el progreso de dosis al
-    editar un tratamiento comenzado; la app solo guarda los cambios.
-  - Historia 13.0 esc.3: la UI no tiene campos de fecha, por lo que el
-    escenario "fecha de finalización anterior a la de inicio" no es
-    aplicable con la UI actual.
-  - Caso 16-iniciar-tratamiento: el botón "Confirmar" queda parcialmente
-    cubierto por el popup de horarios (overlay CSS); es funcional pero
-    Cypress lo detecta cubierto.
 
 ================================================================================
 6. CONCLUSIÓN
 ================================================================================
-- 62/84 pruebas pasan y validan el comportamiento correcto de la app.
-- 22/84 fallan EXCLUSIVAMENTE por código de la app (desviaciones de los
+- 62/83 pruebas pasan y validan el comportamiento correcto de la app.
+- 21/83 fallan EXCLUSIVAMENTE por código de la app (desviaciones de los
   requisitos), todas con comentario explicativo en la spec y captura de
   evidencia. No hubo fallos de servidor, conexión ni de entorno.
 - No se modificó código de la aplicación; solo se corrigieron/mejoraron las

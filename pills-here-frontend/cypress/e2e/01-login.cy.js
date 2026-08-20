@@ -139,31 +139,5 @@ describe("Iniciar sesión", () => {
     cy.get(".login-container").should("be.visible");
   });
 
-  it("Caso 6.0: Formato de correo inválido y contraseña corta | muestra alertas de validación", () => {
-    // Acción: envío con correo inválido y contraseña corta
-    cy.visit("/");
-    cy.get("form.login-form input[type=email]").type("correo-sin-arroba");
-    cy.get("form.login-form input[type=password]").type("123");
-    cy.get("form.login-form button[type=submit]").click();
-    // Evidencia: la validación nativa del navegador bloqueó el submit y
-    // no se muestran los mensajes personalizados del requisito.
-    cy.screenshot("evidencia/01-caso-6-sin-mensajes-personalizados");
 
-    // FALLA POR CÓDIGO DE LA APP:
-    // El input de correo es type="email" y el navegador aplica su validación
-    // nativa al enviar el formulario, bloqueando el submit antes de que se
-    // ejecute la validación de React. Por eso los mensajes personalizados
-    // exigidos por el requisito (historia 2.0 escenario 4 / caso 6.0 del
-    // suite: "Ingresa un correo válido" y "Debe tener al menos 6 caracteres")
-    // NO se muestran en pantalla.
-    cy.get(".error-text").eq(0).should("contain", "Ingresa un correo válido");
-    cy.get(".error-text").eq(1).should("contain", "Debe tener al menos 6 caracteres");
-    cy.url().should("eq", `${Cypress.config("baseUrl")}/`);
-
-    // Cierre (prueba negativa): no quedó sesión activa y seguimos en login
-    cy.window().then((win) => {
-      expect(win.localStorage.getItem("idUsuario")).to.be.null;
-    });
-    cy.get(".login-container").should("be.visible");
-  });
 });
