@@ -1,5 +1,10 @@
 // Área funcional: CANCELAR TRATAMIENTO
 // Casos 43.0 - 44.0 e historia 19.0
+//
+// NOTA: historia 19.0 habla de "eliminar" tratamiento, pero la app solo
+// implementa cancelación (el icono "Eliminar tratamiento" ejecuta un PUT
+// a /cancelar; no existe DELETE en la UI). Las pruebas validan el
+// comportamiento real de cancelación.
 
 describe("Cancelar tratamiento", () => {
   it("Caso 43.0: Cancelar un tratamiento activo | confirma y lo remueve de la lista", () => {

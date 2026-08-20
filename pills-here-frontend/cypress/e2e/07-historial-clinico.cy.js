@@ -21,14 +21,34 @@ describe("Historial clínico", () => {
   it("Caso 28.0: Historial de paciente inexistente | muestra página no encontrada", () => {
     cy.datosPrueba("MEDICO").then((datos) => {
       cy.registrarMedicoApi(datos).then(() => {
+        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
         });
 
+        // Acción: intentar ver el historial de un paciente inexistente
         cy.visit("/historial-clinico/999999");
-        cy.contains("No se encontró el paciente").should("be.visible");
+        // Evidencia: la app muestra un error genérico, no "no encontrado"
+        cy.screenshot("evidencia/07-caso-28-error-generico-historial");
 
+        let mensajeVisible = false;
+        let textoMostrado = "";
+        cy.get("body", { timeout: 5000 }).then(($body) => {
+          textoMostrado = $body.text().replace(/\s+/g, " ").trim();
+          mensajeVisible = textoMostrado.includes("No se encontró el paciente");
+        });
+
+        // Cerrar sesión
         cy.cerrarSesionMedico();
+
+        cy.then(() => {
+          // FALLA POR CÓDIGO DE LA APP:
+          // Para un paciente inexistente el backend lanza una excepción y
+          // la vista muestra el error genérico "No se pudo cargar la
+          // información del paciente." en lugar de un mensaje de página
+          // no encontrada (requisito caso 28.0 del suite).
+          expect(mensajeVisible).to.eq(true);
+        });
       });
     });
   });

@@ -9,7 +9,9 @@ describe("Calendario de medicación", () => {
 
       cy.visit("/calendario-paciente");
       cy.get(".calendario-paciente-header h1").should("contain", "Calendario de Medicación");
-      cy.get(".fc", { timeout: 15000 }).should("be.visible");
+      // NOTA: FullCalendar renderiza con clases con hash
+      // por lo que no existe la clase .fc; se valida el wrapper estable.
+      cy.get(".calendario-wrapper", { timeout: 15000 }).should("be.visible");
       cy.get(".barra-tratamiento-calendario", { timeout: 10000 }).should("have.length.at.least", 1);
 
       cy.cerrarSesionPaciente();
@@ -24,7 +26,8 @@ describe("Calendario de medicación", () => {
         });
 
         cy.visit("/calendario-paciente");
-        cy.get(".fc", { timeout: 15000 }).should("be.visible");
+        // NOTA: se valida el wrapper estable (FullCalendar usa clases hash).
+        cy.get(".calendario-wrapper", { timeout: 15000 }).should("be.visible");
         cy.get(".barra-tratamiento-calendario").should("have.length", 0);
 
         cy.cerrarSesionPaciente();

@@ -27,15 +27,32 @@ describe("Tratamiento activo", () => {
   it("Caso 42.0: Paciente sin tratamiento activo | muestra mensaje de que no hay tratamientos", () => {
     cy.datosPrueba("PACIENTE").then((datos) => {
       cy.registrarPacienteApi(datos).then(() => {
+        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
         });
 
+        // Acción: abrir la lista de tratamientos sin tener ninguno
         cy.visit("/tratamientos-paciente");
         cy.get(".tratamiento-paciente-card").should("have.length", 0);
-        cy.contains("Aún no tienes tratamientos asignados").should("be.visible");
+        // Evidencia: la lista vacía no muestra ningún mensaje
+        cy.screenshot("evidencia/12-caso-42-lista-vacia-sin-mensaje");
 
+        let mensajeVisible = false;
+        cy.get("body", { timeout: 5000 }).then(($body) => {
+          mensajeVisible = $body.text().includes("Aún no tienes tratamientos asignados");
+        });
+
+        // Cerrar sesión
         cy.cerrarSesionPaciente();
+
+        cy.then(() => {
+          // FALLA POR CÓDIGO DE LA APP:
+          // La lista vacía de tratamientos NO muestra ningún mensaje
+          // ("Aún no tienes tratamientos asignados", requisito caso 42.0
+          // e historia 5.0 escenario 2): queda simplemente en blanco.
+          expect(mensajeVisible).to.eq(true);
+        });
       });
     });
   });

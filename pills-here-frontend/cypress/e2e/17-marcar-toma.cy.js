@@ -26,10 +26,11 @@ describe("Marcar dosis como tomada", () => {
         expect(interception.response.statusCode).to.eq(200);
       });
 
-      cy.get(".registro-card").first().find("button").should("be.disabled");
-
+      // La dosis marcada se traslada a la lista de tomas realizadas:
+      // en la pestaña "Tomadas" aparece con el botón deshabilitado.
       cy.get(".detalle-tratamiento-tabs button").contains("Tomadas").click();
       cy.get(".registro-card").should("have.length.at.least", 1);
+      cy.get(".registro-card").first().find("button.tomada").should("be.disabled");
 
       cy.cerrarSesionPaciente();
     });
@@ -65,9 +66,12 @@ describe("Marcar dosis como tomada", () => {
     cy.contextoTratamiento().then((contexto) => {
       cy.obtenerTratamientoApi(contexto.tratamiento.idTratamiento).then((respDetalle) => {
         const idDosis = respDetalle.body.medicamentos[0].idDosis;
+        // NOTA: el backend corre en UTC (contenedor Docker); la hora se
+        // calcula con getUTC* para que la dosis quede realmente vencida
+        // tras la espera de 3 minutos.
         const fechaProxima = new Date(Date.now() + 2 * 60 * 1000);
-        const hora = `${String(fechaProxima.getHours()).padStart(2, "0")}:${String(
-          fechaProxima.getMinutes()
+        const hora = `${String(fechaProxima.getUTCHours()).padStart(2, "0")}:${String(
+          fechaProxima.getUTCMinutes()
         ).padStart(2, "0")}:00`;
 
         cy.iniciarTratamientoApi([{ idDosis, horaInicioPaciente: hora }]).then((respInicio) => {

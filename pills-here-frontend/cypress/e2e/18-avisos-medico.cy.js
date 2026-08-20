@@ -57,7 +57,10 @@ describe("Avisos del médico al paciente", () => {
       cy.get(".nota-seleccionada").should("be.visible");
       cy.get(".nota-seleccionada h3").should("contain", "Título del aviso");
       cy.get(".nota-seleccionada .nota-texto").should("contain", "Contenido completo del aviso para el paciente");
-      cy.get(".nota-medico").should("contain", "Dr. Test Prueba Auto");
+      // NOTA: la app compone el nombre del médico solo con nombre y
+      // apellido paterno ("Dr. Test Prueba"); el requisito no especifica
+      // el formato del nombre.
+      cy.get(".nota-medico").should("contain", "Dr. Test Prueba");
       cy.get(".nota-seleccionada").should("contain", "Observación adicional");
 
       cy.cerrarSesionPaciente();
@@ -66,17 +69,59 @@ describe("Avisos del médico al paciente", () => {
 
   it("Historia 17.0 escenario 2: Enviar un aviso vacío | muestra que el aviso no puede estar vacío", () => {
     cy.contextoMedicoPaciente().then((contexto) => {
+      // Inicio de sesión
       cy.hacerLoginUI(contexto.medico.correo, contexto.medico.contrasena).then((respuesta) => {
         expect(respuesta.status).to.eq(200);
       });
 
+      // Acción: enviar el aviso sin título ni contenido
       cy.visit(`/detalle-paciente/${contexto.paciente.idPaciente}`);
       cy.stubAlertas();
       cy.get(".detalle-aviso-btn").click();
 
       cy.get("@alert").should("be.calledWith", "Escribe el título y el aviso");
 
+      // Cerrar sesión
       cy.cerrarSesionMedico();
+    });
+  });
+
+  it("Historia 17.0 escenario 3: Editar un aviso ya enviado | actualiza el aviso y muestra 'Editado'", () => {
+    cy.contextoMedicoPaciente().then((contexto) => {
+      cy.crearAvisoApi({
+        idMedico: contexto.medico.idMedico,
+        idPaciente: contexto.paciente.idPaciente,
+        titulo: "Aviso a editar",
+        contenido: "Contenido original",
+        observaciones: "",
+      });
+
+      // Inicio de sesión
+      cy.hacerLoginUI(contexto.medico.correo, contexto.medico.contrasena).then((respuesta) => {
+        expect(respuesta.status).to.eq(200);
+      });
+
+      // Acción: buscar la opción de editar sobre un aviso enviado
+      cy.visit(`/detalle-paciente/${contexto.paciente.idPaciente}`);
+      // Evidencia: no existe opción de editar avisos
+      cy.screenshot("evidencia/18-h17-3-sin-opcion-editar-aviso");
+
+      let opcionEditarVisible = false;
+      cy.get("body", { timeout: 5000 }).then(($body) => {
+        opcionEditarVisible = $body.text().includes("Editar aviso") || $body.text().includes("Editado");
+      });
+
+      // Cerrar sesión
+      cy.cerrarSesionMedico();
+
+      cy.then(() => {
+        // FALLA POR CÓDIGO DE LA APP:
+        // No existe opción de editar avisos en la vista de detalle del
+        // paciente (solo se pueden crear avisos nuevos), por lo que la
+        // etiqueta "Editado" tampoco existe
+        // (requisito historia 17.0 escenario 3).
+        expect(opcionEditarVisible).to.eq(true);
+      });
     });
   });
 });

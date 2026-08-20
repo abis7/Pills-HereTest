@@ -116,31 +116,54 @@ describe("Crear tratamiento", () => {
 
   it("Historia 13.0 escenario 2: Crear tratamiento con campos vacíos | muestra campos obligatorios", () => {
     cy.contextoMedicoPaciente().then((contexto) => {
+      // Inicio de sesión
       cy.hacerLoginUI(contexto.medico.correo, contexto.medico.contrasena).then((respuesta) => {
         expect(respuesta.status).to.eq(200);
       });
 
+      // Acción: crear sin llenar los campos obligatorios
       cy.visit(`/crear-tratamiento/${contexto.paciente.idPaciente}`);
       cy.stubAlertas();
       cy.get(".crear-tratamiento-btn-crear").click();
+      // Evidencia: no se muestran mensajes de campo obligatorio
+      cy.screenshot("evidencia/11-h13-2-sin-validacion-campos-vacios");
 
-      cy.get(".field-error").should("be.visible").and("contain", "obligatorio");
-      cy.url().should("include", "/crear-tratamiento");
+      let errorVisible = false;
+      cy.get("body", { timeout: 5000 }).then(($body) => {
+        errorVisible = $body.find(".field-error").length > 0;
+      });
 
+      // Cerrar sesión
       cy.cerrarSesionMedico();
+
+      cy.then(() => {
+        // FALLA POR CÓDIGO DE LA APP:
+        // La vista de crear tratamiento NO valida campos obligatorios
+        // (no renderiza .field-error). El formulario se envía igual y el
+        // error llega solo como alert genérico del backend
+        // (requisito historia 13.0 escenario 2: "Este campo es obligatorio").
+        expect(errorVisible).to.eq(true);
+      });
     });
   });
 
   it("Historia 13.0 escenario 3: Fecha de finalización anterior a la de inicio | muestra error de fechas", () => {
     cy.contextoMedicoPaciente().then((contexto) => {
+      // Inicio de sesión
       cy.hacerLoginUI(contexto.medico.correo, contexto.medico.contrasena).then((respuesta) => {
         expect(respuesta.status).to.eq(200);
       });
 
+      // Acción / validación:
+      // La vista NO tiene campos de fecha (inicio ni finalización); la
+      // fecha de inicio se asigna automáticamente al día actual, por lo
+      // que el escenario "fecha de finalización anterior a la de inicio"
+      // (historia 13.0 escenario 3) no es aplicable con la UI actual.
       cy.visit(`/crear-tratamiento/${contexto.paciente.idPaciente}`);
       cy.get('input[type="date"]').should("not.exist");
       cy.contains("La fecha de finalización debe ser posterior a la fecha de inicio").should("not.exist");
 
+      // Cerrar sesión
       cy.cerrarSesionMedico();
     });
   });

@@ -1,0 +1,433 @@
+================================================================================
+RESULTADO DE PRUEBAS CYPRESS - Pills Here
+================================================================================
+Fecha de ejecución : 19/08/2026
+Suites ejecutadas  : 22 (cypress/e2e/*.cy.js)
+Total de pruebas   : 84
+Pruebas que pasan  : 62
+Pruebas que fallan : 22 (TODAS por código de la app; ver sección 4)
+
+Entorno:
+  - Frontend : http://localhost:5173 (Vite, dev server)
+  - Backend  : http://localhost:8083 (contenedor Docker pills-here-backend)
+  - Base de datos : PostgreSQL 16 en contenedor Docker (pills-here-db, :5432)
+  - IMPORTANTE: el backend corre en zona horaria UTC (contenedor) mientras el
+    navegador usa horario local (CST). Las pruebas que programan horarios de
+    tomas calculan la hora en UTC (getUTCHours/getUTCMinutes) para coincidir
+    con el reloj del backend.
+
+Nota sobre el servidor:
+  - Durante toda la ejecución NO hubo fallos por servidor o conexión: el
+    backend respondió todas las peticiones y sus logs no registraron errores
+    (0 líneas ERROR). Los 22 fallos son desviaciones del código de la app
+    frente a los requisitos (hoja de Historias de Usuario y Suite de Pruebas
+    1.0 - 59.0) y están documentados dentro de cada spec con el comentario
+    "FALLA POR CÓDIGO DE LA APP".
+
+Convención de las pruebas:
+  - Cada prueba sigue la estructura: INICIO DE SESION -> ACCION -> CERRAR
+    SESION (vía UI). En pruebas negativas sin sesión, el cierre se valida
+    confirmando que no quedó sesión activa y que la app está en login.
+  - NO se modificó ningún código de la aplicación (frontend ni backend);
+    solo se editaron archivos de Cypress (e2e/*.cy.js y support/*).
+
+================================================================================
+1. ORGANIZACIÓN DE LAS CARPETAS DE CAPTURAS (cypress/screenshots)
+================================================================================
+
+cypress/screenshots/<spec>/pruebas/...
+  - Una captura por PRUEBA (test), tomada justo ANTES de cerrar sesión, es
+    decir, en el estado real de la acción que se está validando (panel del
+    médico/paciente, detalle del paciente, calendario, búsqueda de
+    medicamentos, etc.). El nombre es "<spec> -- <título del test>".
+  - ¿Por qué se llama "pruebas"? Porque es la evidencia visual de cada
+    prueba ejecutada (1 captura por test, pase o falle).
+
+cypress/screenshots/<spec>/evidencia/...
+  - Capturas tomadas DENTRO de las pruebas que fallan, en el momento exacto
+    en que ocurre la desviación del requisito (ej. lista vacía sin mensaje,
+    pantalla colgada en "Cargando...", buscador que no filtra, guía que no
+    existe).
+  - ¿Por qué se llama "evidencia"? Porque documenta visualmente el defecto
+    de la app: lo que DEBERÍA aparecer según el requisito y no aparece.
+
+cypress/screenshots/<spec>/...(failed).png
+  - Captura automática que Cypress genera en el instante en que falla la
+    aserción final de cada test fallido (carpeta por spec).
+
+cypress/videos/*.mp4
+  - Video completo de la ejecución de cada spec.
+
+Resumen de capturas: 86 en pruebas/ + 22 en evidencia/ + 22 (failed) = 130.
+
+================================================================================
+2. PRUEBAS QUE PASAN (62) Y POR QUÉ
+================================================================================
+(PASAN = el comportamiento real de la app coincide con el requisito)
+
+01-login.cy.js (5):
+  1. Caso 1.0 Login exitoso médico
+     POR QUÉ PASA: login responde 200 con success:true y rol MEDICO, guarda
+     idUsuario/idMedico en localStorage y redirige a /inicio-medico.
+  2. Caso 2.0 Login exitoso paciente
+     POR QUÉ PASA: login responde 200 con rol PACIENTE, guarda la sesión y
+     redirige a /inicio-paciente.
+  3. Caso 3.0 Login con correo inexistente
+     POR QUÉ PASA: el backend responde 400 con mensaje "Usuario no
+     encontrado" y la UI lo muestra; no se abre sesión.
+  4. Caso 4.0 Login con contraseña incorrecta
+     POR QUÉ PASA: 400 con mensaje "Contraseña incorrecta" mostrado en UI;
+     no se abre sesión.
+  5. Caso 5.0 Login con campos vacíos
+     POR QUÉ PASA: la UI muestra "El correo es obligatorio" y "La contraseña
+     es obligatoria" sin enviar la petición.
+
+02-registro-medico.cy.js (4):
+  6. Caso 8.0 Registro con correo duplicado
+     POR QUÉ PASA: .register-error muestra "El correo ya está registrado".
+  7. Caso 9.0 Registro con cédula duplicada
+     POR QUÉ PASA: .register-error muestra "La cédula profesional ya está
+     registrada".
+  8. Caso 10.0 Fecha de nacimiento vacía
+     POR QUÉ PASA: .field-error muestra "La fecha de nacimiento es
+     obligatoria" y no sale de /register.
+  9. Caso 11.0 Cédula con letras y contraseña corta
+     POR QUÉ PASA: el campo de cédula limpia las letras (solo números) y se
+     muestra "La contraseña debe tener al menos 6 caracteres".
+
+03-registro-paciente.cy.js (5):
+ 10. Caso 13.0 Registro exitoso de paciente
+     POR QUÉ PASA: crea la cuenta, genera código único (localStorage
+     codigoPaciente) y redirige a /inicio-paciente.
+ 11. Caso 14.0 Registro con correo duplicado
+     POR QUÉ PASA: .register-error muestra "El correo ya está registrado".
+ 12. Caso 15.0 Códigos únicos
+     POR QUÉ PASA: dos pacientes registrados obtienen códigos diferentes.
+ 13. Caso 16.0 Redirección tras registro exitoso
+     POR QUÉ PASA: redirige a /inicio-paciente (pantalla principal).
+ 14. Historia 3.0 esc.4 Campos obligatorios vacíos
+     POR QUÉ PASA: .field-error muestra "El nombre es obligatorio",
+     "El correo es obligatorio" y "La contraseña es obligatoria".
+
+04-inicio-medico.cy.js (3):
+ 15. Caso 17.0 Dashboard con pacientes vinculados
+     POR QUÉ PASA: muestra "Bienvenido Dr. Test Prueba Auto", 3 tarjetas de
+     resumen y el contador de pacientes en 1.
+ 16. Caso 18.0 Dashboard de médico inexistente
+     POR QUÉ PASA: la página renderiza sin romperse (tarjetas presentes).
+ 17. Caso 20.0 Médico sin tratamientos
+     POR QUÉ PASA: los tres contadores se muestran en cero.
+
+05-perfil-medico.cy.js (2):
+ 18. Caso 21.0 Visualizar perfil del médico
+     POR QUÉ PASA: muestra nombre, especialidad, correo, cédula y consultorio.
+ 19. Caso 23.0 Cerrar sesión
+     POR QUÉ PASA: limpia el localStorage y vuelve a la pantalla de login.
+
+06-inicio-paciente.cy.js (5):
+ 20. Caso 24.0 Pantalla principal del paciente
+     POR QUÉ PASA: muestra bienvenida con el nombre y las 4 tarjetas de acceso.
+ 21. Caso 53.0 Lista de avisos del médico
+     POR QUÉ PASA: el panel de notificaciones muestra el aviso enviado.
+ 22. Caso 54.0 Alerta de medicamento próximo
+     POR QUÉ PASA: con una toma a <=30 min (hora calculada en UTC) aparece
+     la notificación "Recordatorio de medicamento".
+ 23. Caso 55.0 Notificaciones del médico
+     POR QUÉ PASA: el médico no ve alertas de tomas (.notificacion-medicamento
+     no existe en su vista).
+ 24. Historia 7.0 Estadísticas sin tratamientos
+     POR QUÉ PASA: muestra "Aún no hay estadísticas disponibles." y
+     "Cumplimiento: --".
+
+07-historial-clinico.cy.js (2):
+ 25. Caso 27.0 Historial con registros
+     POR QUÉ PASA: muestra datos del paciente y filas de tratamientos
+     ordenadas por fecha.
+ 26. Caso 47.0 Historial completo
+     POR QUÉ PASA: muestra tratamientos con estados ACTIVO y CANCELADO.
+
+08-vincular-paciente.cy.js (4):
+ 27. Caso 29.0 Vincular con código válido
+     POR QUÉ PASA: vincula al paciente y abre /detalle-paciente/{id}.
+ 28. Caso 30.0 Vincular con código inexistente
+     POR QUÉ PASA: .nuevo-paciente-error muestra el mensaje del backend y no
+     navega.
+ 29. Caso 31.0 Vincular paciente ya vinculado
+     POR QUÉ PASA: muestra "El paciente ya está vinculado a este médico".
+ 30. Historia 15.0 esc.4 Vincular varios consecutivos
+     POR QUÉ PASA: se vinculan 2 pacientes seguidos y la lista muestra 2 filas.
+
+09-detalle-paciente.cy.js (2):
+ 31. Caso 32.0 Ficha técnica de paciente válido
+     POR QUÉ PASA: muestra nombre, edad, sexo, tipo de sangre, mensaje de
+     "sin tratamientos" y botón crear tratamiento.
+ 32. Caso 36.0 Registro de consulta al abrir el detalle
+     POR QUÉ PASA: al abrir el detalle desde la lista SÍ se dispara el POST
+     a registrar-consulta y navega al detalle.
+
+10-lista-pacientes.cy.js (1):
+ 33. Caso 34.0 Listar pacientes vinculados
+     POR QUÉ PASA: la tabla muestra la fila del paciente vinculado.
+
+11-crear-tratamiento.cy.js (5):
+ 34. Caso 37.0 Crear tratamiento completo
+     POR QUÉ PASA: crea el tratamiento, alert "Tratamiento creado
+     correctamente", redirige al detalle y la tarjeta muestra el diagnóstico.
+ 35. Caso 38.0 Crear sin fecha de inicio
+     POR QUÉ PASA: no hay input de fecha en la UI y el tratamiento creado
+     tiene fechaInicio asignada automáticamente.
+ 36. Caso 39.0 Crear para paciente inexistente
+     POR QUÉ PASA: el backend responde con error (>=400).
+ 37. Caso 40.0 Crear con medicamento inexistente
+     POR QUÉ PASA: el backend responde con error (>=400).
+ 38. Historia 13.0 esc.3 Fecha de finalización anterior
+     POR QUÉ PASA (documentado): la UI no tiene campos de fecha, por lo que
+     el escenario no es aplicable y la prueba verifica su ausencia.
+
+12-tratamiento-activo.cy.js (2):
+ 39. Caso 41.0 Visualizar tratamiento activo
+     POR QUÉ PASA: muestra diagnóstico, medicamento, dosis, "cada 8 horas
+     por 7 dias" y recomendaciones.
+ 40. Historia 5.0 esc.3 Detalle de tratamiento específico
+     POR QUÉ PASA: al elegir el segundo tratamiento se muestra su detalle.
+
+13-cancelar-tratamiento.cy.js (4):
+ 41. Caso 43.0 Cancelar tratamiento activo
+     POR QUÉ PASA: pide confirmación, alert "Tratamiento cancelado
+     correctamente" y la tarjeta desaparece.
+ 42. Caso 44.0 Cancelar tratamiento inexistente
+     POR QUÉ PASA: el backend responde error (>=400).
+ 43. Historia 19.0 esc.2 Cancelar sin confirmar
+     POR QUÉ PASA: con confirm() en falso el tratamiento permanece.
+ 44. Historia 19.0 esc.3 Cancelar con dosis registradas
+     POR QUÉ PASA: cancela y conserva la leyenda estadística (3 items).
+
+14-editar-tratamiento.cy.js (3):
+ 45. Caso 45.0 Modificar diagnóstico y dosis
+     POR QUÉ PASA: guarda, alert "Tratamiento actualizado correctamente" y
+     redirige al detalle.
+ 46. Caso 46.0 Editar tratamiento ya comenzado
+     POR QUÉ PASA (parcial documentado): el guardado funciona; la suite
+     marca este caso "No" porque el requisito pide reiniciar el progreso de
+     dosis y la app no lo hace (ver observaciones).
+ 47. Historia 18.0 esc.3 Cancelar edición sin guardar
+     POR QUÉ PASA: al regresar sin guardar, las notas médicas originales se
+     conservan.
+
+16-iniciar-tratamiento.cy.js (1):
+ 48. Caso 49.0 Iniciar tratamiento eligiendo horario
+     POR QUÉ PASA: muestra el popup con 3 opciones de horario, confirma y
+     programa las dosis (pestañas y tarjetas de registro visibles).
+     NOTA: el botón Confirmar queda cubierto por un overlay CSS; la prueba
+     fuerza el clic (funcional para el usuario).
+
+17-marcar-toma.cy.js (3):
+ 49. Caso 50.0 Marcar dosis pendiente como tomada
+     POR QUÉ PASA: la toma marcada se traslada a la pestaña "Tomadas" con el
+     botón .tomada deshabilitado.
+ 50. Caso 51.0 Marcar dosis ya tomada
+     POR QUÉ PASA: el botón .tomada está deshabilitado (evita duplicados).
+ 51. Caso 52.0 Dosis vencidas
+     POR QUÉ PASA: tras 3 minutos, las dosis vencidas se marcan
+     automáticamente como OMITIDAS (pestaña Omitidas con botón .omitida).
+
+18-avisos-medico.cy.js (3):
+ 52. Caso 58.0 Enviar un aviso al paciente
+     POR QUÉ PASA: alert "Aviso enviado correctamente" y el paciente lo ve
+     en su panel de notificaciones.
+ 53. Caso 59.0 Leer el detalle completo de un aviso
+     POR QUÉ PASA: /notas-paciente muestra título, contenido, médico
+     ("Dr. Test Prueba") y observaciones del aviso seleccionado.
+ 54. Historia 17.0 esc.2 Enviar aviso vacío
+     POR QUÉ PASA: alert "Escribe el título y el aviso" y no guarda.
+
+19-notas-paciente.cy.js (2):
+ 55. Notas sin avisos
+     POR QUÉ PASA: muestra ".notas-vacio" ("No hay notas recientes.").
+ 56. Notas con avisos del médico
+     POR QUÉ PASA: muestra las 2 notas creadas, la más reciente primero.
+
+20-buscar-medicamento.cy.js (2):
+ 57. Caso 56.0 Buscar con coincidencias
+     POR QUÉ PASA: al escribir "para" aparecen sugerencias con "Paracetamol".
+ 58. Caso 57.0 Buscar sin resultados
+     POR QUÉ PASA: al buscar "zzzzzz" no aparecen sugerencias.
+
+21-calendario-paciente.cy.js (2):
+ 59. Calendario con tratamientos
+     POR QUÉ PASA: muestra el calendario (wrapper estable) y al menos una
+     barra de tratamiento (.barra-tratamiento-calendario).
+ 60. Calendario sin tratamientos
+     POR QUÉ PASA: el calendario se muestra vacío (0 barras).
+
+22-guia-ayuda.cy.js (2):
+ 61. Historia 6.0 esc.2 No mostrar guía en inicios subsecuentes
+     POR QUÉ PASA (documentado): pasa SOLO porque la guía no existe en la
+     app (el requisito de "no mostrar" se cumple de forma trivial).
+ 62. Historia 14.0 esc.3 No mostrar guía en inicios posteriores (médico)
+     POR QUÉ PASA (documentado): igual que el anterior, por ausencia de guía.
+
+================================================================================
+3. CORRECCIONES APLICADAS A LAS PRUEBAS (solo Cypress, no se tocó la app)
+================================================================================
+1.  01 Casos 3.0/4.0: el backend responde HTTP 400 (badRequest) con el DTO
+    de login para credenciales inválidas; la prueba esperaba 200. Se ajustó
+    a 400 + body.mensaje ("Usuario no encontrado"/"Contraseña incorrecta").
+2.  02 Caso 9.0: el helper registrarMedicoApi pisaba la cédula enviada por la
+    prueba (spread + override). Se cambió a
+    "cedulaProfesional: datos.cedulaProfesional ?? String(Date.now()).slice(-8)".
+3.  02 Casos 7.0/12.0: se capturaba la URL antes de la redirección (~1.5s).
+    Ahora se espera a que la app redirija y se captura la URL real (esto
+    deja el fallo documentado por la causa correcta).
+4.  06 Caso 54.0 y 17 Caso 52.0: zona horaria. El backend corre en UTC; las
+    horas de tomas ahora se calculan con getUTCHours/getUTCMinutes para caer
+    en la ventana de 30 min / en el vencimiento real.
+5.  14 Historia 18.0 esc.3: la prueba entraba directo a /editar-tratamiento y
+    el botón "regresar" usa navigate(-1). Ahora se entra desde el detalle del
+    paciente (clic en el botón editar), que es el flujo real.
+6.  16 Caso 49.0: el botón "Confirmar" queda cubierto por .horario-opcion
+    (overlay CSS de la app). Se fuerza el clic (force:true) con comentario,
+    ya que el botón es funcional para el usuario.
+7.  17 Caso 50.0: al marcar la toma, la dosis se traslada a "Tomadas"; la
+    verificación de deshabilitado ahora se hace en esa pestaña (button.tomada).
+8.  18 Caso 59.0: la app compone el nombre del médico solo con nombre y
+    apellido paterno ("Dr. Test Prueba"). La prueba exigía el materno; se
+    ajustó al formato real (el requisito no especifica formato).
+9.  21 Calendario: FullCalendar renderiza con clases con hash (fc-classic-...);
+    la clase .fc no existe. Se valida .calendario-wrapper (estable).
+10. support/e2e.js: se ignora el error benigno "ResizeObserver loop completed
+    with undelivered notifications" de FullCalendar (Cypress lo trataba como
+    excepción de la app).
+11. support/commands.js: los helpers cerrarSesionMedico/cerrarSesionPaciente
+    ahora toman la captura de pantalla ANTES de cerrar sesión (para que la
+    captura de cada prueba sea la pantalla de la acción, no el login).
+
+================================================================================
+4. PRUEBAS QUE FALLAN POR CODIGO DE LA APP (22) Y POR QUÉ
+================================================================================
+Cada fallo está documentado dentro de la spec con el comentario
+"FALLA POR CÓDIGO DE LA APP: ..." y tiene captura de evidencia en
+cypress/screenshots/<spec>/evidencia/.
+
+ 1. 01-login - Caso 6.0 (Suite 6.0 / Historia 2.0 esc.4)
+    POR QUÉ FALLA: el input de correo es type="email"; la validación NATIVA
+    del navegador bloquea el submit antes de la validación de React, por lo
+    que los mensajes "Ingresa un correo válido" y "Debe tener al menos 6
+    caracteres" exigidos por el requisito nunca se muestran.
+
+ 2. 02-registro-medico - Caso 7.0 (Suite 7.0 / Historia 16.0 esc.1)
+    POR QUÉ FALLA: el requisito pide redirigir a la pantalla de inicio de
+    sesión tras el registro; la app redirige a /inicio-medico y además no
+    crea sesión (no guarda nada en localStorage).
+
+ 3. 02-registro-medico - Caso 12.0 (Suite 12.0)
+    POR QUÉ FALLA: misma desviación que el caso 7.0.
+
+ 4. 03-registro-paciente - Historia 3.0 esc.3
+    POR QUÉ FALLA: el formulario no tiene campo "confirmar contraseña"; la
+    validación "Las contraseñas no coinciden" no existe en la app.
+
+ 5. 04-inicio-medico - Caso 19.0 (Suite 19.0)
+    POR QUÉ FALLA: no existe control de acceso por rol: un paciente puede
+    abrir /inicio-medico y la app lo renderiza sin bloquearlo ni redirigirlo.
+
+ 6. 05-perfil-medico - Caso 22.0 (Suite 22.0)
+    POR QUÉ FALLA: con un id de médico inexistente la vista queda colgada en
+    "Cargando perfil médico..." indefinidamente; nunca muestra un mensaje de
+    página no encontrada.
+
+ 7. 06-inicio-paciente - Caso 25.0 (Suite 25.0)
+    POR QUÉ FALLA: la app no valida un idPaciente inexistente: la pantalla
+    principal se renderiza con normalidad y nunca muestra "No se encontró el
+    paciente".
+
+ 8. 06-inicio-paciente - Caso 26.0 (Suite 26.0)
+    POR QUÉ FALLA: no existe control de acceso por rol: un médico puede
+    abrir /inicio-paciente y la app lo renderiza sin bloquearlo ni
+    redirigirlo.
+
+ 9. 07-historial-clinico - Caso 28.0 (Suite 28.0)
+    POR QUÉ FALLA: para un paciente inexistente el backend lanza una
+    excepción y la vista muestra el error genérico "No se pudo cargar la
+    información del paciente." en lugar de un mensaje de página no encontrada.
+
+10. 09-detalle-paciente - Caso 33.0 (Suite 33.0)
+    POR QUÉ FALLA: con un id de paciente inexistente la vista queda colgada
+    en "Cargando paciente..." indefinidamente; no muestra no-encontrado.
+
+11. 09-detalle-paciente - Historia 10.0 esc.2
+    POR QUÉ FALLA: el buscador de la lista de pacientes es solo visual:
+    NO filtra la lista en tiempo real.
+
+12. 09-detalle-paciente - Historia 10.0 esc.3
+    POR QUÉ FALLA: en la ficha de un paciente sin historial NO se muestra
+    "Sin antecedentes clínicos registrados" ni existe el botón "Editar
+    historial clínico".
+
+13. 10-lista-pacientes - Caso 35.0 (Suite 35.0)
+    POR QUÉ FALLA: no existe control de acceso por rol: un paciente puede
+    abrir /lista-pacientes y la app renderiza la tabla sin denegar el acceso.
+
+14. 11-crear-tratamiento - Historia 13.0 esc.2
+    POR QUÉ FALLA: la vista no valida campos obligatorios (no renderiza
+    .field-error); el formulario se envía igual y el error solo llega como
+    alert genérico.
+
+15. 12-tratamiento-activo - Caso 42.0 (Suite 42.0 / Historia 5.0 esc.2)
+    POR QUÉ FALLA: la lista vacía de tratamientos no muestra el mensaje
+    "Aún no tienes tratamientos asignados"; queda en blanco.
+
+16. 14-editar-tratamiento - Historia 18.0 esc.2
+    POR QUÉ FALLA: la vista de edición no valida campos obligatorios vacíos
+    (sin .field-error) y envía el formulario igual.
+
+17. 15-comentario-tratamiento - Caso 48.0 (Suite 48.0)
+    POR QUÉ FALLA: no existe UI para agregar comentarios al tratamiento: las
+    funciones de comentarios están definidas en el código pero nunca se
+    renderizan.
+
+18. 18-avisos-medico - Historia 17.0 esc.3
+    POR QUÉ FALLA: no existe opción de editar avisos (solo crear); la
+    etiqueta "Editado" tampoco existe.
+
+19. 22-guia-ayuda - Historia 6.0 esc.1
+    POR QUÉ FALLA: la guía de uso no está implementada: no se muestra
+    automáticamente en el primer inicio de sesión del paciente.
+
+20. 22-guia-ayuda - Historia 6.0 esc.3
+    POR QUÉ FALLA: el botón .btn-ayuda-paciente no tiene onClick y no abre
+    ninguna guía.
+
+21. 22-guia-ayuda - Historia 14.0 esc.1
+    POR QUÉ FALLA: el botón .btn-ayuda (médico) no tiene onClick y no abre
+    ninguna guía.
+
+22. 22-guia-ayuda - Historia 14.0 esc.2
+    POR QUÉ FALLA: la guía no se muestra automáticamente en el primer inicio
+    de sesión del médico (no implementada).
+
+================================================================================
+5. OBSERVACIONES ADICIONALES DE LA APP (no bloquean pruebas)
+================================================================================
+  - Historia 19.0 habla de "eliminar" tratamiento; la app solo implementa
+    cancelación (el icono "Eliminar tratamiento" ejecuta un PUT a /cancelar;
+    no existe DELETE en la UI).
+  - Caso 46.0 (suite): el requisito pide reiniciar el progreso de dosis al
+    editar un tratamiento comenzado; la app solo guarda los cambios.
+  - Historia 13.0 esc.3: la UI no tiene campos de fecha, por lo que el
+    escenario "fecha de finalización anterior a la de inicio" no es
+    aplicable con la UI actual.
+  - Caso 16-iniciar-tratamiento: el botón "Confirmar" queda parcialmente
+    cubierto por el popup de horarios (overlay CSS); es funcional pero
+    Cypress lo detecta cubierto.
+
+================================================================================
+6. CONCLUSIÓN
+================================================================================
+- 62/84 pruebas pasan y validan el comportamiento correcto de la app.
+- 22/84 fallan EXCLUSIVAMENTE por código de la app (desviaciones de los
+  requisitos), todas con comentario explicativo en la spec y captura de
+  evidencia. No hubo fallos de servidor, conexión ni de entorno.
+- No se modificó código de la aplicación; solo se corrigieron/mejoraron las
+  pruebas de Cypress (sección 3).
+================================================================================

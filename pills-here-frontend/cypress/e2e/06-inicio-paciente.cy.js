@@ -1,5 +1,6 @@
 // Área funcional: PANTALLA PRINCIPAL DEL PACIENTE Y NOTIFICACIONES
 // Casos 24.0 - 26.0, 53.0 - 55.0 e historias 4.0 y 7.0
+//
 
 describe("Pantalla principal del paciente", () => {
   it("Caso 24.0: Pantalla principal del paciente | muestra bienvenida con su nombre", () => {
@@ -21,22 +22,40 @@ describe("Pantalla principal del paciente", () => {
   it("Caso 25.0: Pantalla principal de paciente inexistente | muestra página no encontrada", () => {
     cy.datosPrueba("PACIENTE").then((datos) => {
       cy.registrarPacienteApi(datos).then(() => {
+        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
         });
 
+        // Acción: intentar ver la pantalla principal de un paciente inexistente
+        let idPacienteReal = null;
         cy.window().then((win) => {
+          idPacienteReal = win.localStorage.getItem("idPaciente");
           win.localStorage.setItem("idPaciente", "999999");
         });
         cy.visit("/inicio-paciente");
+        // Evidencia: con idPaciente inexistente la página se renderiza normal
+        cy.screenshot("evidencia/06-caso-25-paciente-inexistente-pagina-normal");
 
-        cy.contains("No se encontró el paciente").should("be.visible");
-
-        cy.window().then((win) => {
-          win.localStorage.clear();
+        let mensajeVisible = false;
+        cy.get("body", { timeout: 5000 }).then(($body) => {
+          mensajeVisible = $body.text().includes("No se encontró el paciente");
         });
-        cy.visit("/");
-        cy.get(".login-container").should("be.visible");
+
+        // Restaurar la sesión válida y cerrar sesión
+        cy.window().then((win) => {
+          win.localStorage.setItem("idPaciente", idPacienteReal);
+        });
+        cy.cerrarSesionPaciente();
+
+        cy.then(() => {
+          // FALLA POR CÓDIGO DE LA APP:
+          // La app NO valida un idPaciente inexistente: la pantalla se
+          // renderiza con normalidad (carga el dashboard por idUsuario) y
+          // nunca muestra "No se encontró el paciente"
+          // (requisito caso 25.0 del suite).
+          expect(mensajeVisible).to.eq(true);
+        });
       });
     });
   });
@@ -44,15 +63,32 @@ describe("Pantalla principal del paciente", () => {
   it("Caso 26.0: Médico intenta acceder a la pantalla del paciente | se bloquea el acceso", () => {
     cy.datosPrueba("MEDICO").then((datos) => {
       cy.registrarMedicoApi(datos).then(() => {
+        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
         });
         cy.url().should("include", "/inicio-medico");
 
+        // Acción: intentar acceder a la pantalla exclusiva del paciente
         cy.visit("/inicio-paciente");
-        cy.url().should("eq", `${Cypress.config("baseUrl")}/inicio-medico`);
+        // Evidencia: el médico puede ver la pantalla del paciente
+        cy.screenshot("evidencia/06-caso-26-medico-ve-inicio-paciente");
 
+        let urlTrasIntento = null;
+        cy.url().then((url) => {
+          urlTrasIntento = url;
+        });
+
+        // Cerrar sesión
         cy.cerrarSesionMedico();
+
+        cy.then(() => {
+          // FALLA POR CÓDIGO DE LA APP:
+          // No existe control de acceso por rol: un médico puede abrir
+          // /inicio-paciente y la app la renderiza en lugar de bloquear el
+          // acceso o redirigirlo (requisito caso 26.0 del suite).
+          expect(urlTrasIntento).to.eq(`${Cypress.config("baseUrl")}/inicio-medico`);
+        });
       });
     });
   });
@@ -84,9 +120,12 @@ describe("Pantalla principal del paciente", () => {
 
   it("Caso 54.0: Alerta de medicamento próximo | muestra recordatorio cuando falta poco para la toma", () => {
     cy.contextoTratamiento().then((contexto) => {
+      // NOTA: el backend corre en UTC (contenedor Docker), por lo que la
+      // hora de la toma debe calcularse con getUTCHours/getUTCMinutes para
+      // que caiga dentro de la ventana de 30 minutos que usa la app.
       const fechaProxima = new Date(Date.now() + 10 * 60 * 1000);
-      const hora = `${String(fechaProxima.getHours()).padStart(2, "0")}:${String(
-        fechaProxima.getMinutes()
+      const hora = `${String(fechaProxima.getUTCHours()).padStart(2, "0")}:${String(
+        fechaProxima.getUTCMinutes()
       ).padStart(2, "0")}:00`;
 
       cy.obtenerTratamientoApi(contexto.tratamiento.idTratamiento).then((respDetalle) => {

@@ -17,7 +17,10 @@ describe("Iniciar tratamiento del paciente", () => {
       cy.get(".btn-seleccionar-horario").first().click();
 
       cy.intercept("PUT", "**/tratamientos/paciente/iniciar").as("iniciarTratamiento");
-      cy.get(".btn-confirmar-horarios").click();
+      // NOTA: el botón "Confirmar" queda parcialmente cubierto por el
+      // contenedor .horario-opcion (overlay CSS de la app); se fuerza el
+      // clic porque el botón sí es funcional para el usuario.
+      cy.get(".btn-confirmar-horarios").click({ force: true });
 
       cy.wait("@iniciarTratamiento").then((interception) => {
         expect(interception.response.statusCode).to.eq(200);

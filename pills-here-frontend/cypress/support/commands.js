@@ -40,7 +40,7 @@ Cypress.Commands.add("registrarMedicoApi", (datos) => {
       url: `${API}/auth/register-medico`,
       body: {
         ...datos,
-        cedulaProfesional: String(Date.now()).slice(-8),
+        cedulaProfesional: datos.cedulaProfesional ?? String(Date.now()).slice(-8),
         especialidad: "Cardiología",
         consultorio: "A-101",
       },
@@ -118,7 +118,20 @@ Cypress.Commands.add("stubAlertas", () => {
   });
 });
 
+// Captura de evidencia del estado de la acción ANTES de cerrar sesión
+// (se usa en todos los tests que terminan con cerrar sesión para que la
+// captura no sea la pantalla de login).
+Cypress.Commands.add("capturarAntesDeCerrarSesion", () => {
+  const nombreSpec = (Cypress.spec?.name || "spec").replace(/\.cy\.js$/, "");
+  const titulo = (Cypress.currentTest?.title || "sin-nombre").slice(0, 120);
+  cy.screenshot(`pruebas/${nombreSpec} -- ${titulo}`, {
+    capture: "viewport",
+    overwrite: false,
+  });
+});
+
 Cypress.Commands.add("cerrarSesionMedico", () => {
+  cy.capturarAntesDeCerrarSesion();
   cy.visit("/perfil-medico");
   cy.get(".perfil-medico-cerrar-btn", { timeout: 10000 }).click();
   cy.url().should("include", "/");
@@ -130,6 +143,7 @@ Cypress.Commands.add("cerrarSesionMedico", () => {
 });
 
 Cypress.Commands.add("cerrarSesionPaciente", () => {
+  cy.capturarAntesDeCerrarSesion();
   cy.visit("/perfil-paciente");
   cy.get(".perfil-paciente-cerrar-btn", { timeout: 10000 }).click();
   cy.url().should("include", "/");
