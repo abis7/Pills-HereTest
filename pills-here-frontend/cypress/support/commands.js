@@ -3,10 +3,10 @@ const API = "http://localhost:8083";
 Cypress.Commands.add("datosPrueba", (rol) => {
   const ts = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   return {
-    correo: `e2e.${rol.toLowerCase()}.${ts}@test.com`,
+    correo: `test.${rol.toLowerCase()}.${ts}@test.com`,
     contrasena: "Prueba123!",
-    nombre: "E2E",
-    apellidoPaterno: "Test",
+    nombre: "Test",
+    apellidoPaterno: "Prueba",
     apellidoMaterno: "Auto",
     fechaNacimiento: "1995-06-15",
     sexo: "Femenino",
@@ -138,4 +138,142 @@ Cypress.Commands.add("cerrarSesionPaciente", () => {
     expect(win.localStorage.getItem("idUsuario")).to.be.null;
     expect(win.localStorage.getItem("idPaciente")).to.be.null;
   });
+});
+
+Cypress.Commands.add("crearAvisoApi", (payload) => {
+  return cy
+    .request({
+      method: "POST",
+      url: `${API}/avisos/crear`,
+      body: payload,
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("buscarMedicamentosApi", (nombre) => {
+  return cy
+    .request({
+      method: "GET",
+      url: `${API}/medicamentos/buscar`,
+      qs: { nombre },
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("iniciarTratamientoApi", (horarios) => {
+  return cy
+    .request({
+      method: "PUT",
+      url: `${API}/tratamientos/paciente/iniciar`,
+      body: { horarios },
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("marcarTomadaApi", (idToma) => {
+  return cy
+    .request({
+      method: "PUT",
+      url: `${API}/tratamientos/tomas/${idToma}/tomada`,
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("obtenerTomasApi", (idTratamiento) => {
+  return cy
+    .request({
+      method: "GET",
+      url: `${API}/tratamientos/${idTratamiento}/medicacion`,
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("obtenerTratamientoApi", (idTratamiento) => {
+  return cy
+    .request({
+      method: "GET",
+      url: `${API}/tratamientos/${idTratamiento}`,
+      failOnStatusCode: false,
+    })
+    .then((resp) => ({ body: resp.body, status: resp.status }));
+});
+
+Cypress.Commands.add("contextoMedicoPaciente", (opciones = {}) => {
+  return cy.datosPrueba("MEDICO").then((dMed) =>
+    cy.registrarMedicoApi(dMed).then(() =>
+      cy.loginApi(dMed.correo, dMed.contrasena).then((loginMed) =>
+        cy.datosPrueba("PACIENTE").then((dPac) =>
+          cy.registrarPacienteApi(dPac).then((resPac) =>
+            cy.loginApi(dPac.correo, dPac.contrasena).then((loginPac) => {
+              const contexto = {
+                medico: {
+                  ...dMed,
+                  idUsuario: loginMed.idUsuario,
+                  idMedico: loginMed.idMedico,
+                },
+                paciente: {
+                  ...dPac,
+                  ...resPac,
+                  idUsuario: loginPac.idUsuario,
+                  idPaciente: loginPac.idPaciente,
+                },
+              };
+
+              if (opciones.sinVincular) {
+                return contexto;
+              }
+
+              return cy
+                .vincularApi(contexto.medico.idUsuario, contexto.paciente.codigoPaciente)
+                .then(() => contexto);
+            })
+          )
+        )
+      )
+    )
+  );
+});
+
+Cypress.Commands.add("contextoTratamiento", () => {
+  return cy.contextoMedicoPaciente().then((contexto) =>
+    cy
+      .crearTratamientoApi({
+        idPaciente: contexto.paciente.idPaciente,
+        idMedico: contexto.medico.idMedico,
+        diagnostico: "Diagnóstico de prueba",
+        recomendaciones: "Tomar con agua",
+        medicamentos: [
+          {
+            idMedicamento: 1,
+            dosis: "1 tableta",
+            intervaloHoras: 8,
+            duracionDias: 7,
+          },
+        ],
+      })
+      .then((respTratamiento) =>
+        cy
+          .request({
+            method: "GET",
+            url: `${API}/tratamientos/paciente/${contexto.paciente.idPaciente}/todos`,
+            failOnStatusCode: false,
+          })
+          .then((respLista) => {
+            const lista = Array.isArray(respLista.body)
+              ? respLista.body
+              : [respLista.body];
+
+            return {
+              ...contexto,
+              tratamiento: lista[lista.length - 1],
+              statusCrear: respTratamiento.status,
+            };
+          })
+      )
+  );
 });
