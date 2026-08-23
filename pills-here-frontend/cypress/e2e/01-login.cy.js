@@ -10,14 +10,11 @@ describe("Iniciar sesión", () => {
   it("Caso 1.0: Login exitoso de un médico | redirige al panel del médico", () => {
     cy.datosPrueba("MEDICO").then((datos) => {
       cy.registrarMedicoApi(datos).then(() => {
-        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
           expect(respuesta.body.success).to.eq(true);
           expect(respuesta.body.rol).to.eq("MEDICO");
         });
-
-        // Acción / validación
         cy.url().should("include", "/inicio-medico");
         cy.window().then((win) => {
           expect(win.localStorage.getItem("idUsuario")).to.not.be.null;
@@ -25,7 +22,6 @@ describe("Iniciar sesión", () => {
         });
         cy.get(".inicio-medico-page").should("be.visible");
 
-        // Cerrar sesión
         cy.cerrarSesionMedico();
       });
     });
@@ -34,14 +30,11 @@ describe("Iniciar sesión", () => {
   it("Caso 2.0: Login exitoso de un paciente | redirige al panel del paciente", () => {
     cy.datosPrueba("PACIENTE").then((datos) => {
       cy.registrarPacienteApi(datos).then(() => {
-        // Inicio de sesión
         cy.hacerLoginUI(datos.correo, datos.contrasena).then((respuesta) => {
           expect(respuesta.status).to.eq(200);
           expect(respuesta.body.success).to.eq(true);
           expect(respuesta.body.rol).to.eq("PACIENTE");
         });
-
-        // Acción / validación
         cy.url().should("include", "/inicio-paciente");
         cy.window().then((win) => {
           expect(win.localStorage.getItem("idUsuario")).to.not.be.null;
@@ -49,7 +42,6 @@ describe("Iniciar sesión", () => {
         });
         cy.get(".inicio-paciente-page").should("be.visible");
 
-        // Cerrar sesión
         cy.cerrarSesionPaciente();
       });
     });
@@ -58,7 +50,6 @@ describe("Iniciar sesión", () => {
   it("Caso 3.0: Login con correo inexistente | muestra usuario no encontrado y no abre sesión", () => {
     const correoInexistente = `test.inexistente.${Date.now()}@test.com`;
 
-    // Inicio de sesión (intento fallido = acción)
     cy.visit("/");
     cy.get("form.login-form input[type=email]").type(correoInexistente);
     cy.get("form.login-form input[type=password]").type("Prueba123!");
@@ -110,7 +101,6 @@ describe("Iniciar sesión", () => {
         // Evidencia: el mensaje de error se muestra y no se abre sesión
         cy.screenshot("pruebas/01-login -- Caso 4.0 login contrasena incorrecta");
 
-        // Cierre (prueba negativa): no quedó sesión activa y seguimos en login
         cy.window().then((win) => {
           expect(win.localStorage.getItem("idUsuario")).to.be.null;
         });

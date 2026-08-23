@@ -41,7 +41,7 @@ describe("Registro de médico", () => {
 
           cy.get(".register-success", { timeout: 10000 }).should("be.visible");
 
-          // Se espera a que la app ejecute su redirección (ocurre ~1.5s
+          // Se espera a que la app ejecute su redirección (ocurre 1.5s
           // después del éxito) y se captura la URL para validarla al final
           // contra el requisito.
           let urlTrasRegistro = null;
@@ -68,9 +68,8 @@ describe("Registro de médico", () => {
           cy.then(() => {
             // FALLA POR CÓDIGO DE LA APP:
             // El requisito (historia 16.0 escenario 1 / caso 7.0 del suite)
-            // indica que tras el registro el médico debe ser redirigido a la
-            // pantalla de inicio de sesión. La app redirige a /inicio-medico
-            // y además no inicia sesión (no guarda nada en localStorage).
+            // indica que tras el registro el médico debe ser redirigido a inicio
+            // y además  inicia sesión y no guarda el usuario (no guarda nada en localStorage).
             expect(urlTrasRegistro).to.eq(`${Cypress.config("baseUrl")}/`);
           });
         });

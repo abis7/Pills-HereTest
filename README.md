@@ -51,6 +51,12 @@ docker run -d --name pills-here-backend \
   pills-here-backend
 ```
 
+o:
+docker run -d --name pills-here-db --network pills-here_default --network-alias db \
+  -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=pills_here \
+  -v pills-here_pills-here-db-data:/var/lib/postgresql/data postgres:16-alpine
+
 ## 3. Frontend
 
 ```bash

@@ -1,12 +1,6 @@
 ================================================================================
 RESULTADO DE PRUEBAS CYPRESS - Pills Here
 ================================================================================
-Fecha de ejecución : 19/08/2026
-Suites ejecutadas  : 22 (cypress/e2e/*.cy.js)
-Total de pruebas   : 83
-Pruebas que pasan  : 62
-Pruebas que fallan : 21 (TODAS por código de la app; ver sección 4)
-
 Entorno:
   - Frontend : http://localhost:5173 (Vite, dev server)
   - Backend  : http://localhost:8083 (contenedor Docker pills-here-backend)
@@ -23,13 +17,11 @@ Nota sobre el servidor:
     frente a los requisitos (hoja de Historias de Usuario y Suite de Pruebas
     1.0 - 59.0) y están documentados dentro de cada spec con el comentario
     "FALLA POR CÓDIGO DE LA APP".
+    -Sin embargo, algunos de los fallos por codigo de app es porque el back 
+    es muy lento y tarda en responder, por lo que la prueba falla porque no 
+    encuentra el elemento a tiempo. Esto se puede arreglar con un timeout mayor 
+    en la prueba.
 
-Convención de las pruebas:
-  - Cada prueba sigue la estructura: INICIO DE SESION -> ACCION -> CERRAR
-    SESION (vía UI). En pruebas negativas sin sesión, el cierre se valida
-    confirmando que no quedó sesión activa y que la app está en login.
-  - NO se modificó ningún código de la aplicación (frontend ni backend);
-    solo se editaron archivos de Cypress (e2e/*.cy.js y support/*).
 
 ================================================================================
 1. ORGANIZACIÓN DE LAS CARPETAS DE CAPTURAS (cypress/screenshots)
@@ -368,13 +360,3 @@ cypress/screenshots/<spec>/evidencia/.
     de sesión del médico (no implementada).
 
 
-================================================================================
-6. CONCLUSIÓN
-================================================================================
-- 62/83 pruebas pasan y validan el comportamiento correcto de la app.
-- 21/83 fallan EXCLUSIVAMENTE por código de la app (desviaciones de los
-  requisitos), todas con comentario explicativo en la spec y captura de
-  evidencia. No hubo fallos de servidor, conexión ni de entorno.
-- No se modificó código de la aplicación; solo se corrigieron/mejoraron las
-  pruebas de Cypress (sección 3).
-================================================================================

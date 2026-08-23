@@ -57,9 +57,7 @@ describe("Avisos del médico al paciente", () => {
       cy.get(".nota-seleccionada").should("be.visible");
       cy.get(".nota-seleccionada h3").should("contain", "Título del aviso");
       cy.get(".nota-seleccionada .nota-texto").should("contain", "Contenido completo del aviso para el paciente");
-      // NOTA: la app compone el nombre del médico solo con nombre y
-      // apellido paterno ("Dr. Test Prueba"); el requisito no especifica
-      // el formato del nombre.
+      
       cy.get(".nota-medico").should("contain", "Dr. Test Prueba");
       cy.get(".nota-seleccionada").should("contain", "Observación adicional");
 
