@@ -1,6 +1,6 @@
-failure-threshold: info
-override:
-  warning:
-    - DL3057
-  info:
-    - DL3059
+failure-threshold: warning
+strict-labels: true
+trustedRegistries:
+  - "docker.io"
+  - "ghcr.io"
+  - "registry.hub.docker.com"
