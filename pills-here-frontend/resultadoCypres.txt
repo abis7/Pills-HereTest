@@ -262,7 +262,7 @@ Resumen de capturas: 86 en pruebas/ + 22 en evidencia/ + 22 (failed) = 130.
 
 
 ================================================================================
-4. PRUEBAS QUE FALLAN POR CODIGO DE LA APP (21) Y POR QUÉ
+3. PRUEBAS QUE FALLAN POR CODIGO DE LA APP (21) Y POR QUÉ
 ================================================================================
 Cada fallo está documentado dentro de la spec con el comentario
 "FALLA POR CÓDIGO DE LA APP: ..." y tiene captura de evidencia en
